@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Wine Cultivar Origin Prediction System - AI-powered wine classification">
+    <meta name="author" content="Eneasato David - 23CG034068">
+    <title>Wine Cultivar Prediction System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🍷 Wine Cultivar Origin Prediction System</h1>
+                <p class="subtitle">AI-Powered Wine Classification using Machine Learning</p>
+                <div class="model-info">
+                    <span class="badge">Algorithm: {{ algorithm }}</span>
+                    <span class="badge success">Accuracy: {{ accuracy }}%</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Input Form Section -->
+            <section class="form-section">
+                <h2>Enter Wine Chemical Properties</h2>
+                <p class="form-description">Provide the chemical composition values to predict the wine cultivar origin.</p>
+                
+                <form id="predictionForm">
+                    <div class="form-grid">
+                        {% for feature in features %}
+                        <div class="form-group">
+                            <label for="{{ feature }}">
+                                {{ feature.replace('_', ' ').title() }}
+                                <span class="tooltip" data-tooltip="Enter numeric value">ⓘ</span>
+                            </label>
+                            <input 
+                                type="number" 
+                                id="{{ feature }}" 
+                                name="{{ feature }}" 
+                                step="0.01" 
+                                required
+                                placeholder="e.g., {% if feature == 'alcohol' %}13.5{% elif feature == 'malic_acid' %}2.0{% elif feature == 'ash' %}2.3{% elif feature == 'magnesium' %}110{% elif feature == 'flavanoids' %}2.5{% elif feature == 'proline' %}1000{% endif %}"
+                            >
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="predictBtn">
+                            <span class="btn-text">Predict Cultivar</span>
+                            <span class="spinner" style="display: none;"></span>
+                        </button>
+                        <button type="reset" class="btn btn-secondary" id="resetBtn">Reset Form</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <h2>Prediction Results</h2>
+                
+                <div class="result-card">
+                    <div class="result-header">
+                        <span class="result-icon">🎯</span>
+                        <h3>Predicted Cultivar</h3>
+                    </div>
+                    <div class="result-value" id="predictedCultivar">-</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidenceFill"></div>
+                    </div>
+                    <p class="confidence-text">
+                        Confidence: <strong id="confidenceValue">-</strong>
+                    </p>
+                </div>
+
+                <div class="probabilities-card">
+                    <h3>Class Probabilities</h3>
+                    <div id="probabilitiesContainer"></div>
+                </div>
+
+                <div class="input-summary">
+                    <h3>Input Summary</h3>
+                    <div id="inputSummary"></div>
+                </div>
+            </section>
+
+            <!-- Error Section -->
+            <section class="error-section" id="errorSection" style="display: none;">
+                <div class="error-card">
+                    <span class="error-icon">⚠️</span>
+                    <h3>Error</h3>
+                    <p id="errorMessage"></p>
+                    <button class="btn btn-secondary" onclick="hideError()">Dismiss</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer Section -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Project Information</h4>
+                    <p><strong>Course:</strong> COS331 - Artificial Intelligence</p>
+                    <p><strong>Author:</strong> Eneasato David</p>
+                    <p><strong>Matric No:</strong> 23CG034068</p>
+                    <p><strong>Date:</strong> January 21, 2026</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Model Details</h4>
+                    <p><strong>Algorithm:</strong> {{ algorithm }}</p>
+                    <p><strong>Features:</strong> 6 chemical properties</p>
+                    <p><strong>Classes:</strong> 3 wine cultivars</p>
+                    <p><strong>Persistence:</strong> Joblib</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <p><a href="/model-info" target="_blank">Model Information</a></p>
+                    <p><a href="/health" target="_blank">System Health</a></p>
+                    <p><a href="https://github.com" target="_blank">GitHub Repository</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Wine Cultivar Prediction System. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Form handling
+        const form = document.getElementById('predictionForm');
+        const resultsSection = document.getElementById('resultsSection');
+        const errorSection = document.getElementById('errorSection');
+        const predictBtn = document.getElementById('predictBtn');
+        const btnText = predictBtn.querySelector('.btn-text');
+        const spinner = predictBtn.querySelector('.spinner');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Clear previous results
+            hideError();
+            resultsSection.style.display = 'none';
+            
+            // Show loading state
+            predictBtn.disabled = true;
+            btnText.textContent = 'Predicting...';
+            spinner.style.display = 'inline-block';
+            
+            // Collect form data
+            const formData = new FormData(form);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = parseFloat(value);
+            });
+            
+            try {
+                // Make prediction request
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayResults(result);
+                } else {
+                    showError(result.error || 'Prediction failed. Please try again.');
+                }
+            } catch (error) {
+                showError('Network error. Please check your connection and try again.');
+                console.error('Error:', error);
+            } finally {
+                // Reset button state
+                predictBtn.disabled = false;
+                btnText.textContent = 'Predict Cultivar';
+                spinner.style.display = 'none';
+            }
+        });
+
+        function displayResults(result) {
+            // Update predicted cultivar
+            document.getElementById('predictedCultivar').textContent = result.cultivar_name;
+            
+            // Update confidence
+            const confidence = (result.confidence * 100).toFixed(2);
+            document.getElementById('confidenceValue').textContent = confidence + '%';
+            document.getElementById('confidenceFill').style.width = confidence + '%';
+            
+            // Set confidence color
+            const confidenceFill = document.getElementById('confidenceFill');
+            if (result.confidence >= 0.8) {
+                confidenceFill.style.backgroundColor = '#10b981';
+            } else if (result.confidence >= 0.6) {
+                confidenceFill.style.backgroundColor = '#f59e0b';
+            } else {
+                confidenceFill.style.backgroundColor = '#ef4444';
+            }
+            
+            // Display probabilities
+            const probabilitiesContainer = document.getElementById('probabilitiesContainer');
+            probabilitiesContainer.innerHTML = '';
+            
+            for (const [cultivar, prob] of Object.entries(result.probabilities)) {
+                const probPercent = (prob * 100).toFixed(2);
+                const probItem = document.createElement('div');
+                probItem.className = 'probability-item';
+                probItem.innerHTML = `
+                    <div class="prob-label">${cultivar}</div>
+                    <div class="prob-bar">
+                        <div class="prob-fill" style="width: ${probPercent}%"></div>
+                    </div>
+                    <div class="prob-value">${probPercent}%</div>
+                `;
+                probabilitiesContainer.appendChild(probItem);
+            }
+            
+            // Display input summary
+            const inputSummary = document.getElementById('inputSummary');
+            inputSummary.innerHTML = '';
+            
+            for (const [feature, value] of Object.entries(result.input_features)) {
+                const inputItem = document.createElement('div');
+                inputItem.className = 'input-item';
+                inputItem.innerHTML = `
+                    <span class="input-label">${feature.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}:</span>
+                    <span class="input-value">${value.toFixed(2)}</span>
+                `;
+                inputSummary.appendChild(inputItem);
+            }
+            
+            // Show results section
+            resultsSection.style.display = 'block';
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            errorSection.style.display = 'block';
+            errorSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function hideError() {
+            errorSection.style.display = 'none';
+        }
+
+        // Reset button handler
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            resultsSection.style.display = 'none';
+            hideError();
+        });
+
+        // Sample data button (optional enhancement)
+        function loadSampleData() {
+            document.getElementById('alcohol').value = 13.5;
+            document.getElementById('malic_acid').value = 2.0;
+            document.getElementById('ash').value = 2.3;
+            document.getElementById('magnesium').value = 110;
+            document.getElementById('flavanoids').value = 2.5;
+            document.getElementById('proline').value = 1000;
+        }
+    </script>
+</body>
+</html>

@@ -6,11 +6,9 @@ Machine Learning Algorithm Used: Random Forest Classifier
 
 Model Persistence Method Used: Joblib
 
-Live URL of Hosted Application: [TO BE UPDATED AFTER DEPLOYMENT]
-Example: https://wine-cultivar-predictor.onrender.com
+Live URL of Hosted Application: https://winecultivar-project-eneasato-david.onrender.com
 
-GitHub Repository Link: [TO BE UPDATED]
-Example: https://github.com/PenDatabase/WineCultivar_Project_Eneasato_David_23CG034068.git
+GitHub Repository Link: https://github.com/PenDatabase/WineCultivar_Project_Eneasato_David_23CG034068.git
 
 ---
 
@@ -20,10 +18,3 @@ DEPLOYMENT NOTES:
 - Model Accuracy: 98%+
 - Features Used: 6 (alcohol, malic_acid, ash, magnesium, flavanoids, proline)
 - Target Classes: 3 (Cultivar 0, Cultivar 1, Cultivar 2)
-
-INSTRUCTIONS TO UPDATE:
-1. Deploy the application to your chosen platform
-2. Update the "Live URL of Hosted Application" with your actual deployment URL
-3. Create a GitHub repository and push your code
-4. Update the "GitHub Repository Link" with your actual repository URL
-5. Save this file before submission
